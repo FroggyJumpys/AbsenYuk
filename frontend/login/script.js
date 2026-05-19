@@ -143,7 +143,7 @@ function initLogin() {
   function validatePassword(input, error) {
     const val = input.value;
     if (!val)        { showError(input, error, 'Password tidak boleh kosong.'); return false; }
-    if (val.length < 6) { showError(input, error, 'Password minimal 6 karakter.'); return false; }
+    if (val.length < 8) { showError(input, error, 'Password minimal 8 karakter.'); return false; }
     clearError(input, error); markSuccess(input); return true;
   }
 
@@ -238,7 +238,7 @@ function initRegister() {
   function validateUsername(input, error) {
     const val = input.value.trim();
     if (!val)          { showError(input, error, 'Username tidak boleh kosong.'); return false; }
-    if (val.length < 3){ showError(input, error, 'Username minimal 3 karakter.'); return false; }
+    if (val.length > 10){ showError(input, error, 'Username maksimal 10 karakter.'); return false; }
     if (/\s/.test(val)){ showError(input, error, 'Username tidak boleh mengandung spasi.'); return false; }
     clearError(input, error); markSuccess(input); return true;
   }
@@ -246,7 +246,7 @@ function initRegister() {
   function validatePassword(input, error) {
     const val = input.value;
     if (!val)           { showError(input, error, 'Password tidak boleh kosong.'); return false; }
-    if (val.length < 6) { showError(input, error, 'Password minimal 6 karakter.'); return false; }
+    if (val.length < 8) { showError(input, error, 'Password minimal 8 karakter.'); return false; }
     clearError(input, error); markSuccess(input); return true;
   }
 
