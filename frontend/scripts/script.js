@@ -64,8 +64,8 @@ function setLoading(btn, loader, isLoading) {
 // ─── Shared: Toggle password visibility ──────────────────────────────────────
 function initPasswordToggle() {
   const toggleBtn = $('togglePassword');
-  const pwInput   = $('password');
-  const icon      = $('eyeIcon');
+  const pwInput = $('password');
+  const icon = $('eyeIcon');
   if (!toggleBtn || !pwInput || !icon) return;
 
   const EYE_OPEN = `
@@ -86,7 +86,7 @@ function initPasswordToggle() {
 
   toggleBtn.addEventListener('click', () => {
     const isHidden = pwInput.type === 'password';
-    pwInput.type   = isHidden ? 'text' : 'password';
+    pwInput.type = isHidden ? 'text' : 'password';
     icon.innerHTML = isHidden ? EYE_CLOSED : EYE_OPEN;
     toggleBtn.setAttribute('aria-label', isHidden ? 'Sembunyikan password' : 'Tampilkan password');
   });
@@ -135,14 +135,14 @@ function initLogin() {
   // ── Validators ──────────────────────────────────────────────────────────────
   function validateEmail(input, error) {
     const val = input.value.trim();
-    if (!val)               { showError(input, error, 'Email tidak boleh kosong.'); return false; }
+    if (!val) { showError(input, error, 'Email tidak boleh kosong.'); return false; }
     if (!isValidEmail(val)) { showError(input, error, 'Format email tidak valid.'); return false; }
     clearError(input, error); markSuccess(input); return true;
   }
 
   function validatePassword(input, error) {
     const val = input.value;
-    if (!val)        { showError(input, error, 'Password tidak boleh kosong.'); return false; }
+    if (!val) { showError(input, error, 'Password tidak boleh kosong.'); return false; }
     if (val.length < 8) { showError(input, error, 'Password minimal 8 karakter.'); return false; }
     clearError(input, error); markSuccess(input); return true;
   }
@@ -155,9 +155,9 @@ function initLogin() {
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   submitBtn.addEventListener('click', () => {
-    const emailInput    = $('email');
+    const emailInput = $('email');
     const passwordInput = $('password');
-    const emailError    = $('emailError');
+    const emailError = $('emailError');
     const passwordError = $('passwordError');
 
     const ok1 = validateEmail(emailInput, emailError);
@@ -184,21 +184,21 @@ function initRegister() {
   if (!submitBtn) return;
 
   // ── Password strength meter ─────────────────────────────────────────────────
-  const strengthWrap  = $('strengthWrap');
-  const strengthBar   = $('strengthBar');
+  const strengthWrap = $('strengthWrap');
+  const strengthBar = $('strengthBar');
   const strengthLabel = $('strengthLabel');
 
   const STRENGTH_CONFIG = [
-    { max: 0,  label: '',          color: 'transparent', width: '0%'   },
-    { max: 2,  label: 'Lemah',     color: '#d04f4f',     width: '25%'  },
-    { max: 4,  label: 'Cukup',     color: '#e89b3a',     width: '55%'  },
-    { max: 6,  label: 'Kuat',      color: '#3a9e6e',     width: '80%'  },
+    { max: 0, label: '', color: 'transparent', width: '0%' },
+    { max: 2, label: 'Lemah', color: '#d04f4f', width: '25%' },
+    { max: 4, label: 'Cukup', color: '#e89b3a', width: '55%' },
+    { max: 6, label: 'Kuat', color: '#3a9e6e', width: '80%' },
     { max: Infinity, label: 'Sangat Kuat', color: '#2a7a55', width: '100%' },
   ];
 
   function scorePassword(val) {
     let score = 0;
-    if (val.length >= 6)  score++;
+    if (val.length >= 6) score++;
     if (val.length >= 10) score++;
     if (/[A-Z]/.test(val)) score++;
     if (/[0-9]/.test(val)) score++;
@@ -214,13 +214,13 @@ function initRegister() {
       return;
     }
     const score = scorePassword(val);
-    const cfg   = STRENGTH_CONFIG.find((c) => score <= c.max) || STRENGTH_CONFIG[STRENGTH_CONFIG.length - 1];
+    const cfg = STRENGTH_CONFIG.find((c) => score <= c.max) || STRENGTH_CONFIG[STRENGTH_CONFIG.length - 1];
 
     strengthWrap.classList.add('show');
-    strengthBar.style.width           = cfg.width;
+    strengthBar.style.width = cfg.width;
     strengthBar.style.backgroundColor = cfg.color;
-    strengthLabel.textContent         = cfg.label;
-    strengthLabel.style.color         = cfg.color;
+    strengthLabel.textContent = cfg.label;
+    strengthLabel.style.color = cfg.color;
     strengthLabel.classList.toggle('show', !!cfg.label);
   }
 
@@ -230,22 +230,22 @@ function initRegister() {
   // ── Validators ──────────────────────────────────────────────────────────────
   function validateEmail(input, error) {
     const val = input.value.trim();
-    if (!val)               { showError(input, error, 'Email tidak boleh kosong.'); return false; }
+    if (!val) { showError(input, error, 'Email tidak boleh kosong.'); return false; }
     if (!isValidEmail(val)) { showError(input, error, 'Format email tidak valid.'); return false; }
     clearError(input, error); markSuccess(input); return true;
   }
 
   function validateUsername(input, error) {
     const val = input.value.trim();
-    if (!val)          { showError(input, error, 'Username tidak boleh kosong.'); return false; }
-    if (val.length > 10){ showError(input, error, 'Username maksimal 10 karakter.'); return false; }
-    if (/\s/.test(val)){ showError(input, error, 'Username tidak boleh mengandung spasi.'); return false; }
+    if (!val) { showError(input, error, 'Username tidak boleh kosong.'); return false; }
+    if (val.length > 10) { showError(input, error, 'Username maksimal 10 karakter.'); return false; }
+    if (/\s/.test(val)) { showError(input, error, 'Username tidak boleh mengandung spasi.'); return false; }
     clearError(input, error); markSuccess(input); return true;
   }
 
   function validatePassword(input, error) {
     const val = input.value;
-    if (!val)           { showError(input, error, 'Password tidak boleh kosong.'); return false; }
+    if (!val) { showError(input, error, 'Password tidak boleh kosong.'); return false; }
     if (val.length < 8) { showError(input, error, 'Password minimal 8 karakter.'); return false; }
     clearError(input, error); markSuccess(input); return true;
   }
@@ -256,7 +256,7 @@ function initRegister() {
   const usernameInput = $('username');
   const usernameError = $('usernameError');
   if (usernameInput && usernameError) {
-    usernameInput.addEventListener('blur',  () => validateUsername(usernameInput, usernameError));
+    usernameInput.addEventListener('blur', () => validateUsername(usernameInput, usernameError));
     usernameInput.addEventListener('input', () => {
       if (usernameInput.classList.contains('is-error')) clearError(usernameInput, usernameError);
     });
@@ -268,10 +268,10 @@ function initRegister() {
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   submitBtn.addEventListener('click', () => {
-    const emailInput    = $('email');
+    const emailInput = $('email');
     const usernameInput = $('username');
     const passwordInput = $('password');
-    const emailError    = $('emailError');
+    const emailError = $('emailError');
     const usernameError = $('usernameError');
     const passwordError = $('passwordError');
 
@@ -300,6 +300,6 @@ function initRegister() {
 document.addEventListener('DOMContentLoaded', () => {
   const page = document.title.trim().toLowerCase();
 
-  if (page === 'login')    initLogin();
+  if (page === 'login') initLogin();
   if (page === 'register') initRegister();
 });
