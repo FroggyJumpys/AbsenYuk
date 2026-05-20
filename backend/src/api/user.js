@@ -17,7 +17,7 @@ router.get('/:id_user', getUserById);
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 
-// PUT
+// PUT untuk update data
 
 // DELETE
 router.delete('/delete', deleteUser);
