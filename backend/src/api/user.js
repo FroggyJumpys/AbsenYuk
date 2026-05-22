@@ -10,7 +10,7 @@ const {
   changePassword,
   deleteUser
 } = require('../database/user');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authorizeRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -30,10 +30,10 @@ router.post('/register', registerUser);
 router.post('/login', loginUser);
 
 // PUT 
-router.put('/update/:email', updateUser);
-router.put('/update-tipe-akun/:email', updateTipeAkun);
-router.put('/change-username/:email', changeUsername);
-router.put('/change-password/:email', changePassword);
+router.put('/update/:email', authenticateToken, authorizeRoles('admin'), updateUser);
+router.put('/update-tipe-akun/:email', authenticateToken, authorizeRoles('admin'), updateTipeAkun);
+router.put('/change-username/:email', authenticateToken, changeUsername);
+router.put('/change-password/:email', authenticateToken, changePassword);
 
 // DELETE
 router.delete('/delete/:email', deleteUser);
