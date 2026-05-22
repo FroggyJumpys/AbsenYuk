@@ -36,6 +36,6 @@ router.put('/change-username/:email', authenticateToken, changeUsername);
 router.put('/change-password/:email', authenticateToken, changePassword);
 
 // DELETE
-router.delete('/delete/:email', deleteUser);
+router.delete('/delete/:email', authenticateToken, deleteUser);
 
 module.exports = router;
