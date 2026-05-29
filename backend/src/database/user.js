@@ -11,6 +11,7 @@ const getUserById = async (req, res) => {
 
     if (result.length <= 0) return res.status(404).json({
       message: 'User tersebut tidak ditemukan.',
+      data: null,
       statusCode: 404
     });
 
@@ -35,6 +36,7 @@ const getAllUser = async (req, res) => {
 
     if (result.length <= 0) return res.status(404).json({
       message: 'Table user kosong.',
+      data: null,
       statusCode: 404
     });
 
@@ -413,7 +415,7 @@ const changePassword = async (req, res) => {
 };
 
 const deleteUser = async (req, res) => {
-  const { email } = req.body;
+  const email = req.body?.email || req.params?.email;
 
   if (!email) return res.status(400).json({
     message: 'Data field kosong.',

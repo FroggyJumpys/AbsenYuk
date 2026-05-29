@@ -56,7 +56,7 @@ const HEADER_ICONS = {
 
 const NAV_ITEMS = {
   admin: [
-    { label: 'User Manajer', icon: 'users', path: 'dashboard/admin/user-manager/index.html' },
+    { label: 'User Manajer', icon: 'users', path: 'dashboard/admin/user-manager.html' },
     { label: 'Acara', icon: 'calendar' },
     { label: 'Absensi', icon: 'check' }
   ],
@@ -549,7 +549,9 @@ function openDeleteModal(email, onConfirm) {
   });
 
   overlay.querySelector('[data-modal-confirm]')?.addEventListener('click', () => {
-    onConfirm(() => closeModal(overlay, onKeyDown));
+    const emailInput = overlay.querySelector('#deleteEmail');
+    const emailValue = emailInput?.value.trim() || email;
+    onConfirm(emailValue, () => closeModal(overlay, onKeyDown));
   });
 }
 
@@ -773,8 +775,10 @@ async function initUserManager(actualRole, token) {
     const response = await fetch(API_CONFIG.getDeleteUserUrl(email), {
       method: 'DELETE',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
-      }
+      },
+      body: JSON.stringify({ email })
     });
 
     const data = await response.json().catch(() => ({}));
@@ -847,9 +851,9 @@ async function initUserManager(actualRole, token) {
 
     try {
       if (action === 'delete') {
-        openDeleteModal(email, async (close) => {
+        openDeleteModal(email, async (confirmedEmail, close) => {
           try {
-            await handleDelete(email);
+            await handleDelete(confirmedEmail);
             close();
             await reloadUsers();
           } catch (modalError) {
