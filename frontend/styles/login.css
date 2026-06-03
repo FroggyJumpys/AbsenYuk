@@ -243,25 +243,6 @@ body {
 }
 
 /* ===========================
-   FORGOT PASSWORD LINK
-=========================== */
-.forgot-link {
-  display: inline-block;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  text-decoration: none;
-  align-self: flex-end;
-  margin-top: -8px;
-  margin-bottom: 28px;
-  transition: color var(--transition);
-}
-
-.forgot-link:hover {
-  color: var(--text-primary);
-  text-decoration: underline;
-}
-
-/* ===========================
    LOGIN BUTTON
 =========================== */
 .btn-primary {
