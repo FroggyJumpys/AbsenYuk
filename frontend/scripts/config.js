@@ -59,5 +59,45 @@ const API_CONFIG = {
   // Get full delete user URL
   getDeleteUserUrl(email) {
     return `${this.API_BASE_URL + this.USER_DELETE_ENDPOINT}/${encodeURIComponent(email)}`;
+  },
+
+  /**
+ * ============================================================
+ * TAMBAHKAN blok ini ke dalam object API_CONFIG yang sudah ada
+ * di file config.js — tepat sebelum kurung kurawal penutup }
+ * ============================================================
+ *
+ * Endpoint untuk acara
+ */
+
+  // --- ACARA ---
+  ACARA_ENDPOINT:        '/acara',
+  ACARA_CREATE_ENDPOINT: '/acara/create',
+  ACARA_UPDATE_ENDPOINT: '/acara/update',
+  ACARA_DELETE_ENDPOINT: '/acara/delete',
+
+  // Get all acara
+  getAcaraUrl() {
+    return this.API_BASE_URL + this.ACARA_ENDPOINT;
+  },
+
+  // Get acara by id
+  getAcaraByIdUrl(id) {
+    return `${this.API_BASE_URL}${this.ACARA_ENDPOINT}/${id}`;
+  },
+
+  // Create acara
+  getCreateAcaraUrl() {
+    return this.API_BASE_URL + this.ACARA_CREATE_ENDPOINT;
+  },
+
+  // Update acara by id
+  getUpdateAcaraUrl(id) {
+    return `${this.API_BASE_URL}${this.ACARA_UPDATE_ENDPOINT}/${id}`;
+  },
+
+  // Delete acara by id
+  getDeleteAcaraUrl(id) {
+    return `${this.API_BASE_URL}${this.ACARA_DELETE_ENDPOINT}/${id}`;
   }
 };

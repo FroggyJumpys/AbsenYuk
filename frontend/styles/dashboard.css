@@ -929,3 +929,185 @@ body.is-loading .loading-overlay {
     height: 64px;
   }
 }
+
+/*
+ * ============================================================
+ * TAMBAHKAN seluruh CSS di bawah ini ke bagian PALING BAWAH
+ * file dashboard.css yang sudah ada.
+ * ============================================================
+ */
+
+/* ============================================================
+   ACARA — Card List
+============================================================ */
+
+.acara-list {
+  display: grid;
+  gap: 14px;
+}
+
+/* Card: 4 kolom — nomor | info utama | status+peserta | aksi */
+.acara-card {
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.acara-num {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Kiri: ikon + judul + tanggal + lokasi */
+.acara-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.acara-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--panel-strong);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.acara-meta {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.acara-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.acara-date {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.acara-location {
+  color: var(--muted);
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Tengah: status + peserta */
+.acara-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.acara-peserta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Kanan: tombol aksi */
+.acara-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   ACARA — Status Pills (tambahan dari yang sudah ada)
+============================================================ */
+
+/* Akan Datang — biru */
+.status-akan-datang {
+  background: #e8f0ff;
+  color: #1a4abf;
+  border-color: #b3c8f5;
+}
+
+/* Berlangsung — oranye */
+.status-berlangsung {
+  background: #fff4e5;
+  color: #b35c00;
+  border-color: #fcd5a0;
+}
+
+/* Selesai — hijau */
+.status-selesai {
+  background: #e6f4ee;
+  color: #1a7a42;
+  border-color: #b6dfc8;
+}
+
+/* ============================================================
+   ACARA — Filter Dropdown
+============================================================ */
+
+.acara-filter-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.acara-status-filter {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #ffffff;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 8px 32px 8px 12px;
+  font-family: var(--font);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+  min-width: 140px;
+  transition: border-color 0.2s ease;
+}
+
+.acara-status-filter:focus {
+  border-color: var(--ink);
+}
+
+/* ============================================================
+   ACARA — Responsive
+============================================================ */
+
+@media (max-width: 720px) {
+  .acara-card {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .acara-num {
+    display: none;
+  }
+
+  .acara-detail {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .acara-actions {
+    justify-content: flex-start;
+  }
+}

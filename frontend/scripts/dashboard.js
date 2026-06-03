@@ -57,7 +57,7 @@ const HEADER_ICONS = {
 const NAV_ITEMS = {
   admin: [
     { label: 'User Manajer', icon: 'users', path: 'dashboard/admin/user-manager.html' },
-    { label: 'Acara', icon: 'calendar' },
+    { label: 'Acara', icon: 'calendar', path: 'dashboard/admin/acara.html' },
     { label: 'Absensi', icon: 'check' }
   ],
   organizer: [
@@ -1032,6 +1032,7 @@ async function initDashboard() {
       applyProfile(profile, 'admin', actualRole);
       initActions(actualRole);
       await initUserManager(actualRole, token);
+      await initAcara(actualRole, token);
       return;
     }
 
@@ -1057,3 +1058,628 @@ async function initDashboard() {
 document.addEventListener('DOMContentLoaded', () => {
   initDashboard();
 });
+
+/* ============================================================
+   ACARA — Konstanta
+============================================================ */
+ 
+const ACARA_PAGE_SIZE = 8;
+ 
+const ACARA_STATUS_LABEL = {
+  'selesai':      'Selesai',
+  'berlangsung':  'Berlangsung',
+  'akan-datang':  'Akan Datang'
+};
+ 
+/* ============================================================
+   ACARA — Helpers
+============================================================ */
+ 
+/**
+ * Tentukan status acara berdasarkan tanggal mulai & akhir.
+ * @param {string} tanggalMulai
+ * @param {string} tanggalAkhir
+ * @returns {'selesai'|'berlangsung'|'akan-datang'}
+ */
+function deriveAcaraStatus(tanggalMulai, tanggalAkhir) {
+  const now   = new Date();
+  const start = new Date(tanggalMulai);
+  const end   = new Date(tanggalAkhir);
+  if (end < now)                        return 'selesai';
+  if (start <= now && now <= end)       return 'berlangsung';
+  return 'akan-datang';
+}
+ 
+/**
+ * Format tanggal + jam ke string bahasa Indonesia.
+ * @param {string} dateStr
+ * @returns {string}
+ */
+function formatDateTime(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  const tgl = d.toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'short', year: 'numeric'
+  });
+  const jam = d.toLocaleTimeString('id-ID', {
+    hour: '2-digit', minute: '2-digit'
+  });
+  return `${tgl} ${jam}`;
+}
+ 
+/**
+ * Konversi datetime string ke format datetime-local input (YYYY-MM-DDTHH:MM).
+ * @param {string} dateStr
+ * @returns {string}
+ */
+function toDatetimeLocal(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+ 
+/* ============================================================
+   ACARA — Fetch
+============================================================ */
+ 
+/**
+ * Ambil semua acara dari backend.
+ * @param {string} token
+ * @returns {Promise<Array>}
+ */
+async function fetchAcara(token) {
+  const response = await fetch(API_CONFIG.getAcaraUrl(), {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+ 
+  const data = await response.json().catch(() => ({}));
+ 
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error(data.message || 'Gagal mengambil data acara.');
+  }
+ 
+  return Array.isArray(data.data) ? data.data : [];
+}
+ 
+/* ============================================================
+   ACARA — Build Card
+============================================================ */
+ 
+/**
+ * Buat elemen card untuk satu acara.
+ * @param {Object} acara
+ * @param {number} index - nomor urut (1-based)
+ * @returns {HTMLElement}
+ */
+function buildAcaraCard(acara, index) {
+  const status     = deriveAcaraStatus(acara.tanggal_mulai, acara.tanggal_akhir);
+  const statusText = ACARA_STATUS_LABEL[status] || status;
+ 
+  const card = document.createElement('div');
+  card.className = 'card acara-card';
+  card.dataset.id = acara.id_acara || '';
+ 
+  card.innerHTML = `
+    <div class="acara-num">${index}</div>
+ 
+    <div class="acara-main">
+      <div class="acara-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
+             stroke="currentColor" stroke-width="1.6">
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M7 3v4M17 3v4M3 10h18" />
+        </svg>
+      </div>
+      <div class="acara-meta">
+        <p class="acara-title">${acara.judul || 'Tanpa Judul'}</p>
+        <p class="acara-date">
+          ${formatDateTime(acara.tanggal_mulai)} &ndash; ${formatDateTime(acara.tanggal_akhir)}
+        </p>
+        <p class="acara-location">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
+               stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          ${acara.lokasi || '-'}
+        </p>
+      </div>
+    </div>
+ 
+    <div class="acara-detail">
+      <span class="status-pill status-${status}">${statusText}</span>
+      <p class="acara-peserta">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 00-3-3.87" />
+          <path d="M16 3.13a4 4 0 010 7.75" />
+        </svg>
+        ${acara.maks_pengunjung ?? '-'} Maks. Peserta
+      </p>
+    </div>
+ 
+    <div class="acara-actions user-actions">
+      <button class="icon-btn" type="button"
+              data-acara-action="edit"
+              data-id="${acara.id_acara || ''}"
+              aria-label="Edit acara">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+             stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M4 20h4l10-10-4-4L4 16v4z" />
+          <path d="M14 6l4 4" />
+        </svg>
+      </button>
+      <button class="icon-btn danger" type="button"
+              data-acara-action="delete"
+              data-id="${acara.id_acara || ''}"
+              aria-label="Hapus acara">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+             stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M3 6h18" />
+          <path d="M8 6V4h8v2" />
+          <path d="M8 10v8M12 10v8M16 10v8" />
+        </svg>
+      </button>
+    </div>
+  `;
+ 
+  return card;
+}
+ 
+/* ============================================================
+   ACARA — Modals
+============================================================ */
+ 
+/**
+ * Modal: Buat Acara Baru
+ */
+function openCreateAcaraModal(onSubmit) {
+  if (document.querySelector('.modal-overlay')) return;
+ 
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Buat acara baru">
+      <div class="modal-header">
+        <h2 class="modal-title">Buat Acara Baru</h2>
+        <p class="modal-subtitle">Isi detail acara yang akan dibuat.</p>
+      </div>
+      <form class="modal-form" id="createAcaraForm">
+        <div class="modal-field">
+          <label class="modal-label" for="ca_judul">Judul Acara</label>
+          <input class="modal-input" id="ca_judul" name="judul"
+                 type="text" placeholder="Contoh: Seminar Kepemimpinan" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ca_lokasi">Lokasi</label>
+          <input class="modal-input" id="ca_lokasi" name="lokasi"
+                 type="text" placeholder="Contoh: Aula Gedung B" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ca_mulai">Tanggal Mulai</label>
+          <input class="modal-input" id="ca_mulai" name="tanggal_mulai"
+                 type="datetime-local" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ca_akhir">Tanggal Akhir</label>
+          <input class="modal-input" id="ca_akhir" name="tanggal_akhir"
+                 type="datetime-local" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ca_maks">Maks. Pengunjung</label>
+          <input class="modal-input" id="ca_maks" name="maks_pengunjung"
+                 type="number" min="1" placeholder="Contoh: 100" required />
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn" type="button" data-modal-cancel>Batalkan</button>
+          <button class="modal-btn primary" type="submit">Buat Acara</button>
+        </div>
+      </form>
+    </div>
+  `;
+ 
+  document.body.appendChild(overlay);
+ 
+  const onKeyDown = (e) => { if (e.key === 'Escape') closeModal(overlay, onKeyDown); };
+  document.addEventListener('keydown', onKeyDown);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay, onKeyDown); });
+  overlay.querySelector('[data-modal-cancel]')?.addEventListener('click', () => closeModal(overlay, onKeyDown));
+ 
+  overlay.querySelector('#createAcaraForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.currentTarget;
+ 
+    // Validasi: tanggal akhir harus setelah tanggal mulai
+    if (new Date(f.tanggal_akhir.value) <= new Date(f.tanggal_mulai.value)) {
+      showToast('Tanggal akhir harus setelah tanggal mulai.', 'error');
+      return;
+    }
+ 
+    const payload = {
+      judul:            f.judul.value.trim(),
+      lokasi:           f.lokasi.value.trim(),
+      tanggal_mulai:    f.tanggal_mulai.value.replace('T', ' ') + ':00',
+      tanggal_akhir:    f.tanggal_akhir.value.replace('T', ' ') + ':00',
+      maks_pengunjung:  Number(f.maks_pengunjung.value)
+    };
+ 
+    onSubmit(payload, () => closeModal(overlay, onKeyDown));
+  });
+}
+ 
+/**
+ * Modal: Edit Acara
+ */
+function openEditAcaraModal(acara, onSubmit) {
+  if (!acara?.id_acara) return;
+  if (document.querySelector('.modal-overlay')) return;
+ 
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Edit acara">
+      <div class="modal-header">
+        <h2 class="modal-title">Edit Acara</h2>
+        <p class="modal-subtitle">Perbarui detail acara.</p>
+      </div>
+      <form class="modal-form" id="editAcaraForm">
+        <div class="modal-field">
+          <label class="modal-label" for="ea_judul">Judul Acara</label>
+          <input class="modal-input" id="ea_judul" name="judul"
+                 type="text" value="${acara.judul || ''}" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ea_lokasi">Lokasi</label>
+          <input class="modal-input" id="ea_lokasi" name="lokasi"
+                 type="text" value="${acara.lokasi || ''}" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ea_mulai">Tanggal Mulai</label>
+          <input class="modal-input" id="ea_mulai" name="tanggal_mulai"
+                 type="datetime-local"
+                 value="${toDatetimeLocal(acara.tanggal_mulai)}" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ea_akhir">Tanggal Akhir</label>
+          <input class="modal-input" id="ea_akhir" name="tanggal_akhir"
+                 type="datetime-local"
+                 value="${toDatetimeLocal(acara.tanggal_akhir)}" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ea_maks">Maks. Pengunjung</label>
+          <input class="modal-input" id="ea_maks" name="maks_pengunjung"
+                 type="number" min="1"
+                 value="${acara.maks_pengunjung ?? ''}" required />
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn" type="button" data-modal-cancel>Batalkan</button>
+          <button class="modal-btn primary" type="submit">Simpan</button>
+        </div>
+      </form>
+    </div>
+  `;
+ 
+  document.body.appendChild(overlay);
+ 
+  const onKeyDown = (e) => { if (e.key === 'Escape') closeModal(overlay, onKeyDown); };
+  document.addEventListener('keydown', onKeyDown);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay, onKeyDown); });
+  overlay.querySelector('[data-modal-cancel]')?.addEventListener('click', () => closeModal(overlay, onKeyDown));
+ 
+  overlay.querySelector('#editAcaraForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.currentTarget;
+ 
+    if (new Date(f.tanggal_akhir.value) <= new Date(f.tanggal_mulai.value)) {
+      showToast('Tanggal akhir harus setelah tanggal mulai.', 'error');
+      return;
+    }
+ 
+    const payload = {
+      judul:           f.judul.value.trim(),
+      lokasi:          f.lokasi.value.trim(),
+      tanggal_mulai:   f.tanggal_mulai.value.replace('T', ' ') + ':00',
+      tanggal_akhir:   f.tanggal_akhir.value.replace('T', ' ') + ':00',
+      maks_pengunjung: Number(f.maks_pengunjung.value)
+    };
+ 
+    onSubmit(acara.id_acara, payload, () => closeModal(overlay, onKeyDown));
+  });
+}
+ 
+/**
+ * Modal: Konfirmasi Hapus Acara
+ */
+function openDeleteAcaraModal(acara, onConfirm) {
+  if (!acara?.id_acara) return;
+  if (document.querySelector('.modal-overlay')) return;
+ 
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Hapus acara">
+      <div class="modal-header">
+        <h2 class="modal-title">Hapus Acara</h2>
+        <p class="modal-subtitle">
+          Tindakan ini tidak dapat dibatalkan. Acara berikut akan dihapus permanen.
+        </p>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Judul Acara</label>
+        <input class="modal-input" type="text" value="${acara.judul || ''}" readonly />
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Lokasi</label>
+        <input class="modal-input" type="text" value="${acara.lokasi || ''}" readonly />
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn" type="button" data-modal-cancel>Batalkan</button>
+        <button class="modal-btn primary" type="button" data-modal-confirm>Hapus</button>
+      </div>
+    </div>
+  `;
+ 
+  document.body.appendChild(overlay);
+ 
+  const onKeyDown = (e) => { if (e.key === 'Escape') closeModal(overlay, onKeyDown); };
+  document.addEventListener('keydown', onKeyDown);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay, onKeyDown); });
+  overlay.querySelector('[data-modal-cancel]')?.addEventListener('click', () => closeModal(overlay, onKeyDown));
+  overlay.querySelector('[data-modal-confirm]')?.addEventListener('click', () => {
+    onConfirm(acara.id_acara, () => closeModal(overlay, onKeyDown));
+  });
+}
+ 
+/* ============================================================
+   ACARA — Init
+============================================================ */
+ 
+/**
+ * Inisialisasi halaman manajemen acara.
+ * Hanya berjalan jika elemen #acaraList ada di DOM (halaman acara.html).
+ *
+ * @param {string} actualRole
+ * @param {string} token
+ */
+async function initAcara(actualRole, token) {
+  // Guard: hanya berjalan di halaman acara.html
+  const listEl       = document.getElementById('acaraList');
+  const emptyEl      = document.getElementById('acaraEmpty');
+  const paginationEl = document.getElementById('acaraPagination');
+  const searchInput  = document.getElementById('acaraSearchInput');
+  const searchClear  = document.getElementById('acaraSearchClear');
+  const statusFilter = document.getElementById('acaraStatusFilter');
+ 
+  if (!listEl || !emptyEl || !paginationEl) return;
+ 
+  // State halaman
+  const state = {
+    all:    [],   // semua data dari API
+    search: '',   // kata kunci pencarian
+    status: '',   // filter status
+    page:   1     // halaman aktif
+  };
+ 
+  /* ── helpers ── */
+  function setEmpty(message, show) {
+    emptyEl.textContent = message;
+    emptyEl.classList.toggle('is-visible', show);
+  }
+ 
+  function applyFilter() {
+    return state.all.filter((acara) => {
+      const matchSearch = !state.search ||
+        (acara.judul || '').toLowerCase().includes(state.search.toLowerCase());
+      const matchStatus = !state.status ||
+        deriveAcaraStatus(acara.tanggal_mulai, acara.tanggal_akhir) === state.status;
+      return matchSearch && matchStatus;
+    });
+  }
+ 
+  function renderPagination(totalPages) {
+    paginationEl.innerHTML = '';
+    if (totalPages <= 1) return;
+ 
+    const prevBtn = document.createElement('button');
+    prevBtn.className = `page-btn${state.page === 1 ? ' is-disabled' : ''}`;
+    prevBtn.textContent = '<';
+    prevBtn.dataset.page = String(state.page - 1);
+    prevBtn.disabled = state.page === 1;
+    paginationEl.appendChild(prevBtn);
+ 
+    for (let i = 1; i <= totalPages; i++) {
+      const btn = document.createElement('button');
+      btn.className = `page-btn${i === state.page ? ' is-active' : ''}`;
+      btn.textContent = String(i);
+      btn.dataset.page = String(i);
+      paginationEl.appendChild(btn);
+    }
+ 
+    const nextBtn = document.createElement('button');
+    nextBtn.className = `page-btn${state.page === totalPages ? ' is-disabled' : ''}`;
+    nextBtn.textContent = '>';
+    nextBtn.dataset.page = String(state.page + 1);
+    nextBtn.disabled = state.page === totalPages;
+    paginationEl.appendChild(nextBtn);
+  }
+ 
+  function renderList() {
+    const filtered   = applyFilter();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / ACARA_PAGE_SIZE));
+ 
+    if (state.page > totalPages) state.page = totalPages;
+ 
+    const start     = (state.page - 1) * ACARA_PAGE_SIZE;
+    const pageItems = filtered.slice(start, start + ACARA_PAGE_SIZE);
+ 
+    listEl.innerHTML = '';
+ 
+    if (filtered.length === 0) {
+      setEmpty('Belum ada acara yang sesuai.', true);
+      paginationEl.innerHTML = '';
+      return;
+    }
+ 
+    setEmpty('', false);
+    pageItems.forEach((acara, i) => {
+      listEl.appendChild(buildAcaraCard(acara, start + i + 1));
+    });
+    renderPagination(totalPages);
+  }
+ 
+  async function reloadAcara() {
+    try {
+      state.all = await fetchAcara(token);
+      renderList();
+    } catch (error) {
+      console.error(error);
+      setEmpty('Gagal memuat data acara.', true);
+      showToast(error.message || 'Gagal memuat data acara.', 'error');
+    }
+  }
+ 
+  /* ── API handlers ── */
+  async function handleCreate(payload) {
+    const response = await fetch(API_CONFIG.getCreateAcaraUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || 'Gagal membuat acara.');
+    showToast('Acara berhasil dibuat.', 'success');
+  }
+ 
+  async function handleUpdate(id, payload) {
+    const response = await fetch(API_CONFIG.getUpdateAcaraUrl(id), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || 'Gagal memperbarui acara.');
+    showToast('Acara berhasil diperbarui.', 'success');
+  }
+ 
+  async function handleDelete(id) {
+    const response = await fetch(API_CONFIG.getDeleteAcaraUrl(id), {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || 'Gagal menghapus acara.');
+    showToast('Acara berhasil dihapus.', 'success');
+  }
+ 
+  /* ── Event: aksi pada card (edit / delete) ── */
+  listEl.addEventListener('click', async (event) => {
+    const btn = event.target.closest('button[data-acara-action]');
+    if (!btn) return;
+ 
+    const action = btn.dataset.acaraAction;
+    const id     = btn.dataset.id;
+    const acara  = state.all.find((a) => String(a.id_acara) === String(id));
+ 
+    try {
+      if (action === 'edit') {
+        openEditAcaraModal(acara, async (acaraId, payload, close) => {
+          try {
+            await handleUpdate(acaraId, payload);
+            close();
+            await reloadAcara();
+          } catch (err) {
+            showToast(err.message || 'Gagal memperbarui acara.', 'error');
+          }
+        });
+        return;
+      }
+ 
+      if (action === 'delete') {
+        openDeleteAcaraModal(acara, async (acaraId, close) => {
+          try {
+            await handleDelete(acaraId);
+            close();
+            await reloadAcara();
+          } catch (err) {
+            showToast(err.message || 'Gagal menghapus acara.', 'error');
+          }
+        });
+        return;
+      }
+    } catch (error) {
+      console.error(error);
+      showToast(error.message || 'Aksi gagal dijalankan.', 'error');
+    }
+  });
+ 
+  /* ── Event: pagination ── */
+  paginationEl.addEventListener('click', (event) => {
+    const btn = event.target.closest('button[data-page]');
+    if (!btn || btn.disabled) return;
+    const next = Number(btn.dataset.page);
+    if (Number.isNaN(next)) return;
+    state.page = next;
+    renderList();
+  });
+ 
+  /* ── Event: search ── */
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      state.search = searchInput.value.trim();
+      state.page   = 1;
+      renderList();
+    });
+  }
+ 
+  /* ── Event: filter status ── */
+  if (statusFilter) {
+    statusFilter.addEventListener('change', () => {
+      state.status = statusFilter.value;
+      state.page   = 1;
+      renderList();
+    });
+  }
+ 
+  /* ── Event: reset ── */
+  if (searchClear) {
+    searchClear.addEventListener('click', () => {
+      state.search = '';
+      state.status = '';
+      state.page   = 1;
+      if (searchInput)  searchInput.value  = '';
+      if (statusFilter) statusFilter.value = '';
+      renderList();
+    });
+  }
+ 
+  /* ── Event: tombol buat acara ── */
+  const createBtn = document.getElementById('acaraCreateBtn');
+  if (createBtn) {
+    createBtn.addEventListener('click', () => {
+      openCreateAcaraModal(async (payload, close) => {
+        try {
+          await handleCreate(payload);
+          close();
+          await reloadAcara();
+        } catch (err) {
+          showToast(err.message || 'Gagal membuat acara.', 'error');
+        }
+      });
+    });
+  }
+ 
+  /* ── Initial load ── */
+  setEmpty('Memuat data acara...', true);
+  await reloadAcara();
+}
