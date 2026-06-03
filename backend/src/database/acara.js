@@ -46,7 +46,7 @@ const getAcaraById = async (req, res) => {
   }
 
   try {
-    const [result] = await db.query('SELECT * FROM tbl_acara WHERE id = ? AND id_user = ?', [id, id_user]);
+    const [result] = await db.query('SELECT * FROM tbl_acara WHERE id_acara = ? AND id_user = ?', [id, id_user]);
     if (result.length === 0) {
       return res.status(404).json({
         message: 'Acara tidak ditemukan',
@@ -137,7 +137,7 @@ const updateAcara = async (req, res) => {
   try {
     const query = `UPDATE tbl_acara
                    SET judul = ?, lokasi = ?, tanggal_mulai = ?, tanggal_akhir = ?, maks_pengunjung = ?
-                   WHERE id = ? AND id_user = ?`;
+                   WHERE id_acara = ? AND id_user = ?`;
     const values = [judul, lokasi, tanggal_mulai, tanggal_akhir, maks_pengunjung, id, id_user];
     const [result] = await connection.query(query, values);
 
@@ -185,7 +185,7 @@ const updateJudulAcara = async (req, res) => {
   await connection.beginTransaction();
   try {
     const [result] = await connection.query(
-      'UPDATE tbl_acara SET judul = ? WHERE id = ? AND id_user = ?',
+      'UPDATE tbl_acara SET judul = ? WHERE id_acara = ? AND id_user = ?',
       [judul, id, id_user]
     );
 
@@ -233,7 +233,7 @@ const updateLokasiAcara = async (req, res) => {
   await connection.beginTransaction();
   try {
     const [result] = await connection.query(
-      'UPDATE tbl_acara SET lokasi = ? WHERE id = ? AND id_user = ?',
+      'UPDATE tbl_acara SET lokasi = ? WHERE id_acara = ? AND id_user = ?',
       [lokasi, id, id_user]
     );
 
@@ -281,7 +281,7 @@ const updateTanggalAcara = async (req, res) => {
   await connection.beginTransaction();
   try {
     const [result] = await connection.query(
-      'UPDATE tbl_acara SET tanggal_mulai = ?, tanggal_akhir = ? WHERE id = ? AND id_user = ?',
+      'UPDATE tbl_acara SET tanggal_mulai = ?, tanggal_akhir = ? WHERE id_acara = ? AND id_user = ?',
       [tanggal_mulai, tanggal_akhir, id, id_user]
     );
 
@@ -329,7 +329,7 @@ const updateMaksPengunjungAcara = async (req, res) => {
   await connection.beginTransaction();
   try {
     const [result] = await connection.query(
-      'UPDATE tbl_acara SET maks_pengunjung = ? WHERE id = ? AND id_user = ?',
+      'UPDATE tbl_acara SET maks_pengunjung = ? WHERE id_acara = ? AND id_user = ?',
       [maks_pengunjung, id, id_user]
     );
 
@@ -360,6 +360,62 @@ const updateMaksPengunjungAcara = async (req, res) => {
   }
 };
 
+const updateStatusAcara = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const { id_user } = req.user || {};
+
+  const allowedStatus = ['akan-datang', 'berlangsung', 'selesai'];
+
+  if (!id || !id_user || !status) {
+    return res.status(400).json({
+      message: 'id, id_user, dan status wajib diisi',
+      statusCode: 400
+    });
+  }
+
+  if (!allowedStatus.includes(status)) {
+    return res.status(400).json({
+      message: 'Status tidak valid',
+      statusCode: 400
+    });
+  }
+
+  const connection = await db.getConnection();
+
+  await connection.beginTransaction();
+  try {
+    const [result] = await connection.query(
+      'UPDATE tbl_acara SET status = ? WHERE id_acara = ? AND id_user = ?',
+      [status, id, id_user]
+    );
+
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        message: 'Acara tidak ditemukan',
+        statusCode: 404
+      });
+    }
+
+    await connection.commit();
+
+    return res.status(200).json({
+      message: 'Status acara berhasil diperbarui',
+      statusCode: 200
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error: ', error);
+    return res.status(500).json({
+      message: 'Error memperbarui status acara',
+      statusCode: 500
+    });
+  } finally {
+    await connection.release();
+  }
+};
+
 const deleteAcara = async (req, res) => {
   const { id } = req.params;
   const { id_user } = req.user || {};
@@ -376,7 +432,7 @@ const deleteAcara = async (req, res) => {
   await connection.beginTransaction();
   try {
     const [result] = await connection.query(
-      'DELETE FROM tbl_acara WHERE id = ? AND id_user = ? LIMIT 1',
+      'DELETE FROM tbl_acara WHERE id_acara = ? AND id_user = ? LIMIT 1',
       [id, id_user]
     );
 
@@ -416,5 +472,6 @@ module.exports = {
   updateLokasiAcara,
   updateTanggalAcara,
   updateMaksPengunjungAcara,
+  updateStatusAcara,
   deleteAcara
 };

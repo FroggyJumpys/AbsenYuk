@@ -8,6 +8,7 @@ const {
   updateLokasiAcara,
   updateTanggalAcara,
   updateMaksPengunjungAcara,
+  updateStatusAcara,
   deleteAcara
 } = require('../database/acara');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth');
@@ -28,6 +29,7 @@ router.put('/update-judul/:id', authenticateToken, authorizeRoles('organizer', '
 router.put('/update-lokasi/:id', authenticateToken, authorizeRoles('organizer', 'admin'), updateLokasiAcara);
 router.put('/update-tanggal/:id', authenticateToken, authorizeRoles('organizer', 'admin'), updateTanggalAcara);
 router.put('/update-maks-pengunjung/:id', authenticateToken, authorizeRoles('organizer', 'admin'), updateMaksPengunjungAcara);
+router.put('/update-status/:id', authenticateToken, authorizeRoles('organizer', 'admin'), updateStatusAcara);
 
 // DELETE
 router.delete('/delete/:id', authenticateToken, authorizeRoles('organizer', 'admin'), deleteAcara);

@@ -74,6 +74,7 @@ const API_CONFIG = {
   ACARA_ENDPOINT:        '/acara',
   ACARA_CREATE_ENDPOINT: '/acara/create',
   ACARA_UPDATE_ENDPOINT: '/acara/update',
+  ACARA_STATUS_ENDPOINT: '/acara/update-status',
   ACARA_DELETE_ENDPOINT: '/acara/delete',
 
   // Get all acara
@@ -94,6 +95,11 @@ const API_CONFIG = {
   // Update acara by id
   getUpdateAcaraUrl(id) {
     return `${this.API_BASE_URL}${this.ACARA_UPDATE_ENDPOINT}/${id}`;
+  },
+
+  // Update status acara by id
+  getUpdateAcaraStatusUrl(id) {
+    return `${this.API_BASE_URL}${this.ACARA_STATUS_ENDPOINT}/${id}`;
   },
 
   // Delete acara by id

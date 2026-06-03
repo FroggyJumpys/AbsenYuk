@@ -1015,6 +1015,53 @@ body.is-loading .loading-overlay {
   white-space: nowrap;
 }
 
+.status-dropdown {
+  position: relative;
+}
+
+.status-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.status-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 140px;
+  background: #ffffff;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  display: none;
+  z-index: 10;
+}
+
+.status-dropdown.is-open .status-menu {
+  display: grid;
+  gap: 6px;
+}
+
+.status-option {
+  border: 2px solid transparent;
+  background: #f7f3ee;
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.status-option:hover {
+  border-color: var(--border);
+  background: #f0ece6;
+}
+
 .acara-peserta {
   font-size: 0.78rem;
   color: var(--muted);

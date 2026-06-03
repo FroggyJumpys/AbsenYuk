@@ -1062,19 +1062,19 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ============================================================
    ACARA — Konstanta
 ============================================================ */
- 
+
 const ACARA_PAGE_SIZE = 8;
- 
+
 const ACARA_STATUS_LABEL = {
-  'selesai':      'Selesai',
-  'berlangsung':  'Berlangsung',
-  'akan-datang':  'Akan Datang'
+  'selesai': 'Selesai',
+  'berlangsung': 'Berlangsung',
+  'akan-datang': 'Akan Datang'
 };
- 
+
 /* ============================================================
    ACARA — Helpers
 ============================================================ */
- 
+
 /**
  * Tentukan status acara berdasarkan tanggal mulai & akhir.
  * @param {string} tanggalMulai
@@ -1082,14 +1082,33 @@ const ACARA_STATUS_LABEL = {
  * @returns {'selesai'|'berlangsung'|'akan-datang'}
  */
 function deriveAcaraStatus(tanggalMulai, tanggalAkhir) {
-  const now   = new Date();
-  const start = new Date(tanggalMulai);
-  const end   = new Date(tanggalAkhir);
-  if (end < now)                        return 'selesai';
-  if (start <= now && now <= end)       return 'berlangsung';
+  const now = new Date();
+  const start = parseSqlDate(tanggalMulai);
+  const end = parseSqlDate(tanggalAkhir);
+  if (end <= now) return 'selesai';
+  if (start <= now && now < end) return 'berlangsung';
   return 'akan-datang';
 }
- 
+
+function getAcaraStatus(acara) {
+  const status = (acara?.status || '').trim();
+  if (status) return status;
+  return deriveAcaraStatus(acara?.tanggal_mulai, acara?.tanggal_akhir);
+}
+
+function parseSqlDate(value) {
+  if (!value) return new Date('');
+  if (value instanceof Date) return value;
+  if (typeof value !== 'string') return new Date(value);
+
+  const normalized = value.trim().replace('T', ' ');
+  const parts = normalized.split(/[- :]/).map((item) => Number(item));
+  if (parts.length < 3 || parts.some((n) => Number.isNaN(n))) return new Date(value);
+
+  const [year, month, day, hour = 0, minute = 0, second = 0] = parts;
+  return new Date(year, month - 1, day, hour, minute, second);
+}
+
 /**
  * Format tanggal + jam ke string bahasa Indonesia.
  * @param {string} dateStr
@@ -1097,7 +1116,7 @@ function deriveAcaraStatus(tanggalMulai, tanggalAkhir) {
  */
 function formatDateTime(dateStr) {
   if (!dateStr) return '-';
-  const d = new Date(dateStr);
+  const d = parseSqlDate(dateStr);
   const tgl = d.toLocaleDateString('id-ID', {
     day: 'numeric', month: 'short', year: 'numeric'
   });
@@ -1106,7 +1125,7 @@ function formatDateTime(dateStr) {
   });
   return `${tgl} ${jam}`;
 }
- 
+
 /**
  * Konversi datetime string ke format datetime-local input (YYYY-MM-DDTHH:MM).
  * @param {string} dateStr
@@ -1114,15 +1133,16 @@ function formatDateTime(dateStr) {
  */
 function toDatetimeLocal(dateStr) {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
+  const d = parseSqlDate(dateStr);
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
- 
+
+
 /* ============================================================
    ACARA — Fetch
 ============================================================ */
- 
+
 /**
  * Ambil semua acara dari backend.
  * @param {string} token
@@ -1133,21 +1153,21 @@ async function fetchAcara(token) {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` }
   });
- 
+
   const data = await response.json().catch(() => ({}));
- 
+
   if (!response.ok) {
     if (response.status === 404) return [];
     throw new Error(data.message || 'Gagal mengambil data acara.');
   }
- 
+
   return Array.isArray(data.data) ? data.data : [];
 }
- 
+
 /* ============================================================
    ACARA — Build Card
 ============================================================ */
- 
+
 /**
  * Buat elemen card untuk satu acara.
  * @param {Object} acara
@@ -1155,13 +1175,13 @@ async function fetchAcara(token) {
  * @returns {HTMLElement}
  */
 function buildAcaraCard(acara, index) {
-  const status     = deriveAcaraStatus(acara.tanggal_mulai, acara.tanggal_akhir);
+  const status = getAcaraStatus(acara);
   const statusText = ACARA_STATUS_LABEL[status] || status;
- 
+
   const card = document.createElement('div');
   card.className = 'card acara-card';
   card.dataset.id = acara.id_acara || '';
- 
+
   card.innerHTML = `
     <div class="acara-num">${index}</div>
  
@@ -1190,7 +1210,23 @@ function buildAcaraCard(acara, index) {
     </div>
  
     <div class="acara-detail">
-      <span class="status-pill status-${status}">${statusText}</span>
+      <div class="status-dropdown" data-status-dropdown>
+        <button class="status-pill status-${status} status-trigger" type="button"
+                data-status-trigger
+                data-id="${acara.id_acara || ''}"
+                aria-haspopup="listbox"
+                aria-expanded="false">
+          ${statusText}
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <div class="status-menu" role="listbox" aria-label="Ubah status">
+          <button class="status-option" type="button" data-status-value="akan-datang" data-id="${acara.id_acara || ''}">Akan Datang</button>
+          <button class="status-option" type="button" data-status-value="berlangsung" data-id="${acara.id_acara || ''}">Berlangsung</button>
+          <button class="status-option" type="button" data-status-value="selesai" data-id="${acara.id_acara || ''}">Selesai</button>
+        </div>
+      </div>
       <p class="acara-peserta">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
              stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -1227,20 +1263,20 @@ function buildAcaraCard(acara, index) {
       </button>
     </div>
   `;
- 
+
   return card;
 }
- 
+
 /* ============================================================
    ACARA — Modals
 ============================================================ */
- 
+
 /**
  * Modal: Buat Acara Baru
  */
 function openCreateAcaraModal(onSubmit) {
   if (document.querySelector('.modal-overlay')) return;
- 
+
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -1282,43 +1318,43 @@ function openCreateAcaraModal(onSubmit) {
       </form>
     </div>
   `;
- 
+
   document.body.appendChild(overlay);
- 
+
   const onKeyDown = (e) => { if (e.key === 'Escape') closeModal(overlay, onKeyDown); };
   document.addEventListener('keydown', onKeyDown);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay, onKeyDown); });
   overlay.querySelector('[data-modal-cancel]')?.addEventListener('click', () => closeModal(overlay, onKeyDown));
- 
+
   overlay.querySelector('#createAcaraForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const f = e.currentTarget;
- 
+
     // Validasi: tanggal akhir harus setelah tanggal mulai
     if (new Date(f.tanggal_akhir.value) <= new Date(f.tanggal_mulai.value)) {
       showToast('Tanggal akhir harus setelah tanggal mulai.', 'error');
       return;
     }
- 
+
     const payload = {
-      judul:            f.judul.value.trim(),
-      lokasi:           f.lokasi.value.trim(),
-      tanggal_mulai:    f.tanggal_mulai.value.replace('T', ' ') + ':00',
-      tanggal_akhir:    f.tanggal_akhir.value.replace('T', ' ') + ':00',
-      maks_pengunjung:  Number(f.maks_pengunjung.value)
+      judul: f.judul.value.trim(),
+      lokasi: f.lokasi.value.trim(),
+      tanggal_mulai: f.tanggal_mulai.value.replace('T', ' ') + ':00',
+      tanggal_akhir: f.tanggal_akhir.value.replace('T', ' ') + ':00',
+      maks_pengunjung: Number(f.maks_pengunjung.value)
     };
- 
+
     onSubmit(payload, () => closeModal(overlay, onKeyDown));
   });
 }
- 
+
 /**
  * Modal: Edit Acara
  */
 function openEditAcaraModal(acara, onSubmit) {
   if (!acara?.id_acara) return;
   if (document.querySelector('.modal-overlay')) return;
- 
+
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -1363,42 +1399,42 @@ function openEditAcaraModal(acara, onSubmit) {
       </form>
     </div>
   `;
- 
+
   document.body.appendChild(overlay);
- 
+
   const onKeyDown = (e) => { if (e.key === 'Escape') closeModal(overlay, onKeyDown); };
   document.addEventListener('keydown', onKeyDown);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay, onKeyDown); });
   overlay.querySelector('[data-modal-cancel]')?.addEventListener('click', () => closeModal(overlay, onKeyDown));
- 
+
   overlay.querySelector('#editAcaraForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const f = e.currentTarget;
- 
+
     if (new Date(f.tanggal_akhir.value) <= new Date(f.tanggal_mulai.value)) {
       showToast('Tanggal akhir harus setelah tanggal mulai.', 'error');
       return;
     }
- 
+
     const payload = {
-      judul:           f.judul.value.trim(),
-      lokasi:          f.lokasi.value.trim(),
-      tanggal_mulai:   f.tanggal_mulai.value.replace('T', ' ') + ':00',
-      tanggal_akhir:   f.tanggal_akhir.value.replace('T', ' ') + ':00',
+      judul: f.judul.value.trim(),
+      lokasi: f.lokasi.value.trim(),
+      tanggal_mulai: f.tanggal_mulai.value.replace('T', ' ') + ':00',
+      tanggal_akhir: f.tanggal_akhir.value.replace('T', ' ') + ':00',
       maks_pengunjung: Number(f.maks_pengunjung.value)
     };
- 
+
     onSubmit(acara.id_acara, payload, () => closeModal(overlay, onKeyDown));
   });
 }
- 
+
 /**
  * Modal: Konfirmasi Hapus Acara
  */
 function openDeleteAcaraModal(acara, onConfirm) {
   if (!acara?.id_acara) return;
   if (document.querySelector('.modal-overlay')) return;
- 
+
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -1423,9 +1459,9 @@ function openDeleteAcaraModal(acara, onConfirm) {
       </div>
     </div>
   `;
- 
+
   document.body.appendChild(overlay);
- 
+
   const onKeyDown = (e) => { if (e.key === 'Escape') closeModal(overlay, onKeyDown); };
   document.addEventListener('keydown', onKeyDown);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay, onKeyDown); });
@@ -1434,11 +1470,11 @@ function openDeleteAcaraModal(acara, onConfirm) {
     onConfirm(acara.id_acara, () => closeModal(overlay, onKeyDown));
   });
 }
- 
+
 /* ============================================================
    ACARA — Init
 ============================================================ */
- 
+
 /**
  * Inisialisasi halaman manajemen acara.
  * Hanya berjalan jika elemen #acaraList ada di DOM (halaman acara.html).
@@ -1448,50 +1484,49 @@ function openDeleteAcaraModal(acara, onConfirm) {
  */
 async function initAcara(actualRole, token) {
   // Guard: hanya berjalan di halaman acara.html
-  const listEl       = document.getElementById('acaraList');
-  const emptyEl      = document.getElementById('acaraEmpty');
+  const listEl = document.getElementById('acaraList');
+  const emptyEl = document.getElementById('acaraEmpty');
   const paginationEl = document.getElementById('acaraPagination');
-  const searchInput  = document.getElementById('acaraSearchInput');
-  const searchClear  = document.getElementById('acaraSearchClear');
+  const searchInput = document.getElementById('acaraSearchInput');
+  const searchClear = document.getElementById('acaraSearchClear');
   const statusFilter = document.getElementById('acaraStatusFilter');
- 
+
   if (!listEl || !emptyEl || !paginationEl) return;
- 
+
   // State halaman
   const state = {
-    all:    [],   // semua data dari API
+    all: [],   // semua data dari API
     search: '',   // kata kunci pencarian
     status: '',   // filter status
-    page:   1     // halaman aktif
+    page: 1     // halaman aktif
   };
- 
+
   /* ── helpers ── */
   function setEmpty(message, show) {
     emptyEl.textContent = message;
     emptyEl.classList.toggle('is-visible', show);
   }
- 
+
   function applyFilter() {
     return state.all.filter((acara) => {
       const matchSearch = !state.search ||
         (acara.judul || '').toLowerCase().includes(state.search.toLowerCase());
-      const matchStatus = !state.status ||
-        deriveAcaraStatus(acara.tanggal_mulai, acara.tanggal_akhir) === state.status;
+      const matchStatus = !state.status || getAcaraStatus(acara) === state.status;
       return matchSearch && matchStatus;
     });
   }
- 
+
   function renderPagination(totalPages) {
     paginationEl.innerHTML = '';
     if (totalPages <= 1) return;
- 
+
     const prevBtn = document.createElement('button');
     prevBtn.className = `page-btn${state.page === 1 ? ' is-disabled' : ''}`;
     prevBtn.textContent = '<';
     prevBtn.dataset.page = String(state.page - 1);
     prevBtn.disabled = state.page === 1;
     paginationEl.appendChild(prevBtn);
- 
+
     for (let i = 1; i <= totalPages; i++) {
       const btn = document.createElement('button');
       btn.className = `page-btn${i === state.page ? ' is-active' : ''}`;
@@ -1499,7 +1534,7 @@ async function initAcara(actualRole, token) {
       btn.dataset.page = String(i);
       paginationEl.appendChild(btn);
     }
- 
+
     const nextBtn = document.createElement('button');
     nextBtn.className = `page-btn${state.page === totalPages ? ' is-disabled' : ''}`;
     nextBtn.textContent = '>';
@@ -1507,31 +1542,31 @@ async function initAcara(actualRole, token) {
     nextBtn.disabled = state.page === totalPages;
     paginationEl.appendChild(nextBtn);
   }
- 
+
   function renderList() {
-    const filtered   = applyFilter();
+    const filtered = applyFilter();
     const totalPages = Math.max(1, Math.ceil(filtered.length / ACARA_PAGE_SIZE));
- 
+
     if (state.page > totalPages) state.page = totalPages;
- 
-    const start     = (state.page - 1) * ACARA_PAGE_SIZE;
+
+    const start = (state.page - 1) * ACARA_PAGE_SIZE;
     const pageItems = filtered.slice(start, start + ACARA_PAGE_SIZE);
- 
+
     listEl.innerHTML = '';
- 
+
     if (filtered.length === 0) {
       setEmpty('Belum ada acara yang sesuai.', true);
       paginationEl.innerHTML = '';
       return;
     }
- 
+
     setEmpty('', false);
     pageItems.forEach((acara, i) => {
       listEl.appendChild(buildAcaraCard(acara, start + i + 1));
     });
     renderPagination(totalPages);
   }
- 
+
   async function reloadAcara() {
     try {
       state.all = await fetchAcara(token);
@@ -1542,7 +1577,7 @@ async function initAcara(actualRole, token) {
       showToast(error.message || 'Gagal memuat data acara.', 'error');
     }
   }
- 
+
   /* ── API handlers ── */
   async function handleCreate(payload) {
     const response = await fetch(API_CONFIG.getCreateAcaraUrl(), {
@@ -1557,7 +1592,7 @@ async function initAcara(actualRole, token) {
     if (!response.ok) throw new Error(data.message || 'Gagal membuat acara.');
     showToast('Acara berhasil dibuat.', 'success');
   }
- 
+
   async function handleUpdate(id, payload) {
     const response = await fetch(API_CONFIG.getUpdateAcaraUrl(id), {
       method: 'PUT',
@@ -1571,7 +1606,22 @@ async function initAcara(actualRole, token) {
     if (!response.ok) throw new Error(data.message || 'Gagal memperbarui acara.');
     showToast('Acara berhasil diperbarui.', 'success');
   }
- 
+
+  async function handleStatusUpdate(acaraId, nextStatus) {
+    const response = await fetch(API_CONFIG.getUpdateAcaraStatusUrl(acaraId), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ status: nextStatus })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || 'Gagal memperbarui status acara.');
+    showToast('Status acara diperbarui.', 'success');
+  }
+
   async function handleDelete(id) {
     const response = await fetch(API_CONFIG.getDeleteAcaraUrl(id), {
       method: 'DELETE',
@@ -1581,16 +1631,54 @@ async function initAcara(actualRole, token) {
     if (!response.ok) throw new Error(data.message || 'Gagal menghapus acara.');
     showToast('Acara berhasil dihapus.', 'success');
   }
- 
+
   /* ── Event: aksi pada card (edit / delete) ── */
   listEl.addEventListener('click', async (event) => {
+    const statusToggle = event.target.closest('button[data-status-trigger]');
+    if (statusToggle) {
+      const dropdown = statusToggle.closest('[data-status-dropdown]');
+      const expanded = statusToggle.getAttribute('aria-expanded') === 'true';
+
+      document.querySelectorAll('[data-status-dropdown].is-open').forEach((node) => {
+        if (node !== dropdown) {
+          node.classList.remove('is-open');
+          node.querySelector('[data-status-trigger]')?.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      if (dropdown) {
+        dropdown.classList.toggle('is-open', !expanded);
+        statusToggle.setAttribute('aria-expanded', String(!expanded));
+      }
+      return;
+    }
+
+    const statusOption = event.target.closest('button[data-status-value]');
+    if (statusOption) {
+      const nextStatus = statusOption.dataset.statusValue;
+      const acaraId = statusOption.dataset.id;
+      const dropdown = statusOption.closest('[data-status-dropdown]');
+      if (dropdown) {
+        dropdown.classList.remove('is-open');
+        dropdown.querySelector('[data-status-trigger]')?.setAttribute('aria-expanded', 'false');
+      }
+
+      try {
+        await handleStatusUpdate(acaraId, nextStatus);
+        await reloadAcara();
+      } catch (err) {
+        showToast(err.message || 'Gagal memperbarui status acara.', 'error');
+      }
+      return;
+    }
+
     const btn = event.target.closest('button[data-acara-action]');
     if (!btn) return;
- 
+
     const action = btn.dataset.acaraAction;
-    const id     = btn.dataset.id;
-    const acara  = state.all.find((a) => String(a.id_acara) === String(id));
- 
+    const id = btn.dataset.id;
+    const acara = state.all.find((a) => String(a.id_acara) === String(id));
+
     try {
       if (action === 'edit') {
         openEditAcaraModal(acara, async (acaraId, payload, close) => {
@@ -1604,7 +1692,7 @@ async function initAcara(actualRole, token) {
         });
         return;
       }
- 
+
       if (action === 'delete') {
         openDeleteAcaraModal(acara, async (acaraId, close) => {
           try {
@@ -1622,7 +1710,15 @@ async function initAcara(actualRole, token) {
       showToast(error.message || 'Aksi gagal dijalankan.', 'error');
     }
   });
- 
+
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-status-dropdown]')) return;
+    document.querySelectorAll('[data-status-dropdown].is-open').forEach((node) => {
+      node.classList.remove('is-open');
+      node.querySelector('[data-status-trigger]')?.setAttribute('aria-expanded', 'false');
+    });
+  });
+
   /* ── Event: pagination ── */
   paginationEl.addEventListener('click', (event) => {
     const btn = event.target.closest('button[data-page]');
@@ -1632,37 +1728,37 @@ async function initAcara(actualRole, token) {
     state.page = next;
     renderList();
   });
- 
+
   /* ── Event: search ── */
   if (searchInput) {
     searchInput.addEventListener('input', () => {
       state.search = searchInput.value.trim();
-      state.page   = 1;
+      state.page = 1;
       renderList();
     });
   }
- 
+
   /* ── Event: filter status ── */
   if (statusFilter) {
     statusFilter.addEventListener('change', () => {
       state.status = statusFilter.value;
-      state.page   = 1;
+      state.page = 1;
       renderList();
     });
   }
- 
+
   /* ── Event: reset ── */
   if (searchClear) {
     searchClear.addEventListener('click', () => {
       state.search = '';
       state.status = '';
-      state.page   = 1;
-      if (searchInput)  searchInput.value  = '';
+      state.page = 1;
+      if (searchInput) searchInput.value = '';
       if (statusFilter) statusFilter.value = '';
       renderList();
     });
   }
- 
+
   /* ── Event: tombol buat acara ── */
   const createBtn = document.getElementById('acaraCreateBtn');
   if (createBtn) {
@@ -1678,7 +1774,7 @@ async function initAcara(actualRole, token) {
       });
     });
   }
- 
+
   /* ── Initial load ── */
   setEmpty('Memuat data acara...', true);
   await reloadAcara();
