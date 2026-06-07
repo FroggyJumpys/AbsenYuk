@@ -22,17 +22,13 @@ if errorlevel 1 (
 
 echo Node.js dan npm terdeteksi.
 
-REM Instal dependensi jika belum ada
-if not exist node_modules (
-  echo Menginstal paket yang diperlukan...
-  npm install
-  if errorlevel 1 (
-    echo Instalasi paket gagal.
-    set "EXIT_CODE=1"
-    goto end
-  )
-) else (
-  echo Dependensi sudah terpasang.
+REM Instal dependensi terbaru
+echo Menginstal paket yang diperlukan...
+npm install
+if errorlevel 1 (
+  echo Instalasi paket gagal.
+  set "EXIT_CODE=1"
+  goto end
 )
 
 echo Menjalankan aplikasi...
