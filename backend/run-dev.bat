@@ -24,7 +24,7 @@ echo Node.js dan npm terdeteksi.
 
 REM Instal dependensi terbaru
 echo Menginstal paket yang diperlukan...
-npm install
+call npm install
 if errorlevel 1 (
   echo Instalasi paket gagal.
   set "EXIT_CODE=1"
@@ -33,7 +33,7 @@ if errorlevel 1 (
 
 echo Menjalankan aplikasi...
 
-npm run dev
+call npm run dev
 
 :end
 echo(
