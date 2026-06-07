@@ -43,6 +43,11 @@ button {
   font-family: var(--font);
 }
 
+/* ── Utility Classes (replacing Bootstrap) ──────────────── */
+.d-flex { display: flex; }
+.align-items-center { align-items: center; }
+.justify-content-center { justify-content: center; }
+
 .bg-noise {
   position: fixed;
   inset: 0;
