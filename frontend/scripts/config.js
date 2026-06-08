@@ -136,5 +136,92 @@ const API_CONFIG = {
 
   getDashboardSummaryUrl() {
     return this.API_BASE_URL + this.DASHBOARD_SUMMARY_ENDPOINT;
+  },
+
+  // --- ABSENSI ---
+  ABSENSI_CREATE_ENDPOINT: '/absensi/create',
+  ABSENSI_ACARA_ENDPOINT: '/absensi/acara',
+  ABSENSI_GENERATE_QR_ENDPOINT: '/absensi/generate-qr',
+  ABSENSI_LOGS_ENDPOINT: '/absensi/logs',
+  ABSENSI_SUBMIT_ENDPOINT: '/absensi/submit',
+  ABSENSI_TOKEN_ENDPOINT: '/absensi/token',
+
+  getCreateAbsensiUrl() {
+    return this.API_BASE_URL + this.ABSENSI_CREATE_ENDPOINT;
+  },
+  getAbsensiByAcaraUrl(id_acara) {
+    return `${this.API_BASE_URL}/absensi/acara/${id_acara}`;
+  },
+  getGenerateQrUrl(id_absensi) {
+    return `${this.API_BASE_URL}/absensi/${id_absensi}/generate-qr`;
+  },
+  getAbsensiLogsUrl(id_absensi) {
+    return `${this.API_BASE_URL}/absensi/${id_absensi}/logs`;
+  },
+  getSubmitAbsensiUrl() {
+    return this.API_BASE_URL + this.ABSENSI_SUBMIT_ENDPOINT;
+  },
+  getAbsensiByTokenUrl(token) {
+    return `${this.API_BASE_URL}/absensi/token/${token}`;
+  },
+  getDeleteAbsensiLogUrl(id_absensi, id_log) {
+    return `${this.API_BASE_URL}/absensi/${id_absensi}/log/${id_log}`;
+  },
+  getDeleteAbsensiUrl(id_absensi) {
+    return `${this.API_BASE_URL}/absensi/${id_absensi}`;
+  },
+  getAllAbsensiLogsUrl(params = {}) {
+    const q = new URLSearchParams();
+    if (params.acara) q.set('acara', params.acara);
+    if (params.status) q.set('status', params.status);
+    if (params.page) q.set('page', params.page);
+    if (params.limit) q.set('limit', params.limit);
+    const query = q.toString();
+    return `${this.API_BASE_URL}/absensi/logs${query ? '?' + query : ''}`;
+  },
+  getUpdateAbsensiLogUrl(id_log) {
+    return `${this.API_BASE_URL}/absensi/log/${id_log}`;
+  },
+  getAddAbsensiLogUrl() {
+    return `${this.API_BASE_URL}/absensi/log`;
+  },
+  getDeleteGlobalLogUrl(id_log) {
+    return `${this.API_BASE_URL}/absensi/log/${id_log}`;
+  },
+  getLogsByAcaraUrl(id_acara) {
+    return `${this.API_BASE_URL}/absensi/acara/${id_acara}/logs`;
+  },
+
+  // --- ACARA POST & KOMENTAR ---
+  getAcaraPostListUrl(id_acara) {
+    return `${this.API_BASE_URL}/acara-post/acara/${id_acara}`;
+  },
+  getAcaraPostCreateUrl(id_acara) {
+    return `${this.API_BASE_URL}/acara-post/acara/${id_acara}`;
+  },
+  getAcaraPostDeleteUrl(id_post) {
+    return `${this.API_BASE_URL}/acara-post/${id_post}`;
+  },
+  getKomentarListUrl(id_post) {
+    return `${this.API_BASE_URL}/acara-post/${id_post}/komentar`;
+  },
+  getKomentarCreateUrl(id_post) {
+    return `${this.API_BASE_URL}/acara-post/${id_post}/komentar`;
+  },
+  getKomentarDeleteUrl(id_komentar) {
+    return `${this.API_BASE_URL}/acara-post/komentar/${id_komentar}`;
+  },
+
+  // --- ACARA IKUTI ---
+  getAcaraIkutiCreateUrl() {
+    return this.API_BASE_URL + '/acara-ikuti/create';
+  },
+  getAcaraIkutiByUserUrl(id_user) {
+    return `${this.API_BASE_URL}/acara-ikuti/user/${id_user}`;
+  },
+
+  // --- ACARA BROWSE ---
+  getAcaraBrowseUrl() {
+    return this.API_BASE_URL + '/acara/browse';
   }
 };

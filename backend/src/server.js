@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -19,9 +20,17 @@ const PORT = process.env.APP_PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors())
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(morgan('dev'));
 app.use(cookieParser());
+
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, '../../frontend')));
+
+// Serve absensi attendance form
+app.get('/absensi/isi', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/pages/dashboard/absensi/isi.html'));
+});
 
 app.get('/', (req, res) => {
   return res.json({ message: 'Hallo traveller! ' });
