@@ -254,4 +254,5 @@ const API_CONFIG = {
     const query = qs.toString();
     return `${this.API_BASE_URL}/export/logs/${id_acara}${suffix}${query ? '?' + query : ''}`;
   }
+
 };
