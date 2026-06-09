@@ -1219,6 +1219,82 @@ async function initAdminSummary(token) {
   }
 }
 
+function initMobileSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+
+  const profile = sidebar.querySelector('.profile');
+  if (!profile) return;
+
+  const toggle = document.createElement('button');
+  toggle.className = 'sidebar-toggle';
+  toggle.setAttribute('aria-label', 'Buka menu navigasi');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.innerHTML = '<span></span><span></span><span></span>';
+
+  profile.after(toggle);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'sidebar-nav-wrap';
+
+  const itemsToWrap = [];
+  let el = toggle.nextElementSibling;
+  while (el) {
+    itemsToWrap.push(el);
+    el = el.nextElementSibling;
+  }
+  itemsToWrap.forEach(function (node) { wrap.appendChild(node); });
+  toggle.after(wrap);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'nav-overlay';
+  document.body.appendChild(overlay);
+
+  let isOpen = false;
+
+  function open() {
+    isOpen = true;
+    sidebar.classList.add('is-open');
+    toggle.classList.add('is-open');
+    toggle.setAttribute('aria-expanded', 'true');
+    overlay.classList.add('is-visible');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function close() {
+    isOpen = false;
+    sidebar.classList.remove('is-open');
+    toggle.classList.remove('is-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    overlay.classList.remove('is-visible');
+    document.body.style.overflow = '';
+  }
+
+  toggle.addEventListener('click', function () {
+    if (isOpen) close(); else open();
+  });
+
+  overlay.addEventListener('click', close);
+
+  wrap.addEventListener('click', function (e) {
+    if (e.target.closest('.side-link, [data-action]')) {
+      close();
+    }
+  });
+
+  function onKeyDown(e) {
+    if (e.key === 'Escape' && isOpen) close();
+  }
+  document.addEventListener('keydown', onKeyDown);
+
+  function handleResize() {
+    if (window.innerWidth > 980 && isOpen) {
+      close();
+    }
+  }
+  window.addEventListener('resize', handleResize);
+}
+
 async function initDashboard() {
   const requiredRole = getRequiredRole();
   const token = localStorage.getItem('authToken');
@@ -1233,6 +1309,8 @@ async function initDashboard() {
     const profile = await fetchProfile(token);
     const actualRole = getRoleFromProfile(profile);
     const previewRole = getPreviewRole();
+
+    initMobileSidebar();
 
     if (requiredRole === 'router') {
       var isProfile = document.body && document.body.dataset && document.body.dataset.page === 'profile';
@@ -1287,7 +1365,7 @@ async function initDashboard() {
       if (isUserAcaraSaya) {
         applyProfile(profile, actualRole, actualRole);
         initActions(actualRole);
-        await initUserAcaraSaya(actualRole, token);
+        await initUserAcaraSaya(actualRole, token, profile.id_user);
         return;
       }
 
@@ -3551,7 +3629,7 @@ async function initUserAcaraList(actualRole, token) {
   }
 }
 
-async function initUserAcaraSaya(actualRole, token) {
+async function initUserAcaraSaya(actualRole, token, id_user) {
   const listEl = document.getElementById('userAcaraSayaList');
   const emptyEl = document.getElementById('userAcaraSayaEmpty');
   if (!listEl) return;
@@ -3562,8 +3640,7 @@ async function initUserAcaraSaya(actualRole, token) {
 
   try {
     setEmpty('Memuat data...', true);
-    const user = JSON.parse(localStorage.getItem('authUser') || '{}');
-    const resp = await fetch(API_CONFIG.getAcaraIkutiByUserUrl(user.id_user || ''), {
+    const resp = await fetch(API_CONFIG.getAcaraIkutiByUserUrl(id_user), {
       headers: { Authorization: `Bearer ${token}` }
     });
     const data = await resp.json().catch(() => ({}));

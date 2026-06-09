@@ -838,6 +838,76 @@ body.is-loading .loading-overlay {
   cursor: not-allowed;
 }
 
+/* ── Mobile sidebar toggle ────────────────────── */
+.sidebar-toggle {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+.sidebar-toggle span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 2px;
+  transform-origin: center;
+  transition: transform 0.28s ease, opacity 0.2s ease;
+}
+
+.sidebar-toggle.is-open span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.sidebar-toggle.is-open span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.sidebar-toggle.is-open span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* Collapsible nav wrapper for mobile */
+.sidebar-nav-wrap {
+  width: 100%;
+}
+
+/* Desktop: wrap is transparent to layout — preserves original flex gap */
+@media (min-width: 981px) {
+  .sidebar-nav-wrap {
+    display: contents;
+  }
+}
+
+/* Backdrop overlay for mobile nav */
+.nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 98;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.nav-overlay.is-visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
 @media (max-width: 1100px) {
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -856,32 +926,73 @@ body.is-loading .loading-overlay {
   .sidebar {
     flex-direction: row;
     flex-wrap: wrap;
-    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .sidebar-toggle {
+    display: flex;
   }
 
   .profile {
-    flex: 1 1 160px;
-    justify-items: start;
-    text-align: left;
-    grid-template-columns: auto 1fr;
+    flex: 1;
+    display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .profile-name {
+    font-size: 0.9rem;
+  }
+
+  .profile-role {
+    display: none;
   }
 
   .divider {
+    display: none;
     width: 100%;
+  }
+
+  .sidebar-nav-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.25s ease;
+  }
+
+  .sidebar.is-open .sidebar-nav-wrap {
+    max-height: 560px;
+    opacity: 1;
   }
 
   .side-nav,
   .side-actions {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .side-link {
+    padding: 10px 14px;
   }
 
   .main {
-    padding: 24px;
+    padding: 20px 16px;
   }
 
   .menu-card-wide {
