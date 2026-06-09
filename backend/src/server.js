@@ -20,7 +20,7 @@ const PORT = process.env.APP_PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors())
-app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false }));
 app.use(morgan('dev'));
 app.use(cookieParser());
 
