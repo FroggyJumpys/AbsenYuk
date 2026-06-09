@@ -137,6 +137,9 @@ const API_CONFIG = {
   getDashboardSummaryUrl() {
     return this.API_BASE_URL + this.DASHBOARD_SUMMARY_ENDPOINT;
   },
+  getOrganizerSummaryUrl() {
+    return `${this.API_BASE_URL}/dashboard/organizer-summary`;
+  },
 
   // --- ABSENSI ---
   ABSENSI_CREATE_ENDPOINT: '/absensi/create',
@@ -223,5 +226,32 @@ const API_CONFIG = {
   // --- ACARA BROWSE ---
   getAcaraBrowseUrl() {
     return this.API_BASE_URL + '/acara/browse';
+  },
+
+  // --- EXPORT ---
+  getExportUsersUrl(params = {}, format = 'excel') {
+    const suffix = format === 'pdf' ? '/pdf' : '';
+    const qs = new URLSearchParams();
+    if (params.q) qs.set('q', params.q);
+    const query = qs.toString();
+    return `${this.API_BASE_URL}/export/users${suffix}${query ? '?' + query : ''}`;
+  },
+  getExportAcaraUrl(params = {}, format = 'excel') {
+    const suffix = format === 'pdf' ? '/pdf' : '';
+    const qs = new URLSearchParams();
+    if (params.status) qs.set('status', params.status);
+    const query = qs.toString();
+    return `${this.API_BASE_URL}/export/acara${suffix}${query ? '?' + query : ''}`;
+  },
+  getExportAbsensiUrl(id_acara, format = 'excel') {
+    const suffix = format === 'pdf' ? '/pdf' : '';
+    return `${this.API_BASE_URL}/export/absensi/${id_acara}${suffix}`;
+  },
+  getExportLogsUrl(id_acara, params = {}, format = 'excel') {
+    const suffix = format === 'pdf' ? '/pdf' : '';
+    const qs = new URLSearchParams();
+    if (params.status) qs.set('status', params.status);
+    const query = qs.toString();
+    return `${this.API_BASE_URL}/export/logs/${id_acara}${suffix}${query ? '?' + query : ''}`;
   }
 };

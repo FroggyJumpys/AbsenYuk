@@ -50,7 +50,8 @@ const getAcaraById = async (req, res) => {
 
   try {
     const [result] = await db.query(
-      `SELECT a.*, u.username AS creator_name
+      `SELECT a.*, u.username AS creator_name,
+              (SELECT COUNT(*) FROM tbl_acara_ikuti WHERE id_acara = a.id_acara) AS peserta_ikut
        FROM tbl_acara a
        JOIN tbl_user u ON u.id_user = a.id_user
        WHERE a.id_acara = ?`,

@@ -13,6 +13,7 @@ const acaraIkutiAPI = require('./api/acara_ikuti');
 const acaraPostAPI = require('./api/acara_post');
 const dashboardAPI = require('./api/dashboard');
 const absensiAPI = require('./api/absensi');
+const exportAPI = require('./api/export');
 
 const app = express();
 const PORT = process.env.APP_PORT || 3000;
@@ -43,6 +44,7 @@ app.use('/api/acara-ikuti', acaraIkutiAPI);
 app.use('/api/acara-post', acaraPostAPI);
 app.use('/api/dashboard', dashboardAPI);
 app.use('/api/absensi', absensiAPI);
+app.use('/api', exportAPI);
 
 
 app.use((err, req, res, next) => {

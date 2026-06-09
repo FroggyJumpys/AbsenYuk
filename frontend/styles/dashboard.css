@@ -1731,3 +1731,57 @@ body.is-loading .loading-overlay {
     align-items: flex-start;
   }
 }
+
+.user-create[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ============================================================
+   EXPORT DROPDOWN
+============================================================ */
+
+.export-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.export-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 170px;
+  background: #ffffff;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  padding: 6px;
+  display: none;
+  z-index: 20;
+}
+
+.export-menu.is-open {
+  display: grid;
+  gap: 4px;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+
+.export-option:hover {
+  background: var(--panel-strong);
+}

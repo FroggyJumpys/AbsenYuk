@@ -329,6 +329,29 @@ function closeModal(overlay, onKeyDown) {
   if (onKeyDown) document.removeEventListener('keydown', onKeyDown);
 }
 
+async function downloadExport(url, token, filename) {
+  try {
+    const resp = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.message || 'Gagal export data.');
+    }
+    const blob = await resp.blob();
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objUrl);
+  } catch (err) {
+    showToast(err.message || 'Gagal export data.', 'error');
+  }
+}
+
 function openConfirmModal(message, title = 'Konfirmasi') {
   return new Promise((resolve) => {
     if (document.querySelector('.modal-overlay')) { resolve(false); return; }
@@ -983,6 +1006,24 @@ async function initUserManager(actualRole, token) {
     });
   }
 
+  const userExportBtn = document.getElementById('userExportBtn');
+  if (userExportBtn) {
+    userExportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = userExportBtn.parentElement.querySelector('.export-menu');
+      if (menu) menu.classList.toggle('is-open');
+    });
+    userExportBtn.parentElement.querySelectorAll('.export-option').forEach((opt) => {
+      opt.addEventListener('click', () => {
+        const format = opt.dataset.format;
+        const q = document.getElementById('userSearchInput')?.value?.trim() || '';
+        const filename = format === 'pdf' ? 'users.pdf' : 'users.xlsx';
+        downloadExport(API_CONFIG.getExportUsersUrl({ q }, format), token, filename);
+        opt.closest('.export-menu')?.classList.remove('is-open');
+      });
+    });
+  }
+
   setEmpty('Memuat data user...', true);
   await reloadUsers();
 }
@@ -1264,6 +1305,9 @@ async function initDashboard() {
 
       applyProfile(profile, actualRole, actualRole);
       initActions(actualRole);
+      if (document.querySelector('[data-summary="totalAcara"]')) {
+        await initOrganizerSummary(token);
+      }
       return;
     }
 
@@ -1298,6 +1342,14 @@ async function initDashboard() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initDashboard();
+});
+
+document.addEventListener('click', (event) => {
+  document.querySelectorAll('.export-menu.is-open').forEach((menu) => {
+    if (!event.target.closest('.export-dropdown')) {
+      menu.classList.remove('is-open');
+    }
+  });
 });
 
 /* ============================================================
@@ -1346,9 +1398,65 @@ async function initAdminSummary(token) {
   }
 }
 
-/* ============================================================
-   ACARA — Konstanta
-============================================================ */
+async function initOrganizerSummary(token) {
+  const fields = ['totalAcara', 'totalPeserta', 'totalAbsensi'];
+  try {
+    const resp = await fetch(API_CONFIG.getOrganizerSummaryUrl(), {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok) {
+      const summary = data.data || {};
+      fields.forEach((key) => {
+        const el = document.querySelector(`[data-summary="${key}"]`);
+        if (el) el.textContent = summary[key] ?? '-';
+      });
+    }
+  } catch (err) {
+    console.error(err);
+  }
+
+  // Load agenda
+  const agendaList = document.getElementById('orgAgendaList');
+  const agendaEmpty = document.getElementById('orgAgendaEmpty');
+  if (!agendaList) return;
+
+  try {
+    const resp = await fetch(API_CONFIG.getAcaraUrl(), {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const d = await resp.json().catch(() => ({}));
+    const acaras = resp.ok ? (Array.isArray(d.data) ? d.data : []) : [];
+    if (agendaEmpty) {
+      agendaEmpty.classList.toggle('is-visible', acaras.length === 0);
+      agendaEmpty.textContent = 'Belum ada acara.';
+    }
+    acaras.slice(0, 4).forEach((acara) => {
+      const card = document.createElement('div');
+      card.className = 'card event-card';
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', () => {
+        window.location.href = buildPagesUrl(`dashboard/organizer/acara-detail.html?id=${acara.id_acara}`);
+      });
+      card.innerHTML = `
+        <div class="event-left">
+          <div class="event-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M7 3v4M17 3v4M3 10h18" />
+            </svg>
+          </div>
+          <div class="event-info">
+            <p class="event-title">${acara.judul || '-'}</p>
+            <p class="event-meta">${formatDateTime(acara.tanggal_mulai)}</p>
+            <p class="event-location">${acara.lokasi || '-'}</p>
+          </div>
+        </div>
+        <span class="status-pill status-${getAcaraStatus(acara)}">${ACARA_STATUS_LABEL[getAcaraStatus(acara)] || getAcaraStatus(acara)}</span>`;
+      agendaList.appendChild(card);
+    });
+  } catch (_) {}
+}
 
 const ACARA_PAGE_SIZE = 8;
 
@@ -2062,6 +2170,24 @@ async function initAcara(actualRole, token) {
     });
   }
 
+  const acaraExportBtn = document.getElementById('acaraExportBtn');
+  if (acaraExportBtn) {
+    acaraExportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = acaraExportBtn.parentElement.querySelector('.export-menu');
+      if (menu) menu.classList.toggle('is-open');
+    });
+    acaraExportBtn.parentElement.querySelectorAll('.export-option').forEach((opt) => {
+      opt.addEventListener('click', () => {
+        const format = opt.dataset.format;
+        const status = document.getElementById('acaraStatusFilter')?.value || '';
+        const filename = format === 'pdf' ? 'acara.pdf' : 'acara.xlsx';
+        downloadExport(API_CONFIG.getExportAcaraUrl({ status }, format), token, filename);
+        opt.closest('.export-menu')?.classList.remove('is-open');
+      });
+    });
+  }
+
   /* ── Initial load ── */
   setEmpty('Memuat data acara...', true);
   await reloadAcara();
@@ -2489,6 +2615,30 @@ async function initAbsensi(actualRole, token) {
     });
   }
 
+  const absensiExportBtn = document.getElementById('absensiExportBtn');
+  if (absensiExportBtn) {
+    const updateAbsensiExportState = () => {
+      absensiExportBtn.disabled = !selectedAcaraId;
+    };
+    updateAbsensiExportState();
+    absensiExportBtn.addEventListener('click', (e) => {
+      if (!selectedAcaraId) { showToast('Pilih acara terlebih dahulu.', 'info'); return; }
+      e.stopPropagation();
+      const menu = absensiExportBtn.parentElement.querySelector('.export-menu');
+      if (menu) menu.classList.toggle('is-open');
+    });
+    absensiExportBtn.parentElement.querySelectorAll('.export-option').forEach((opt) => {
+      opt.addEventListener('click', () => {
+        if (!selectedAcaraId) { showToast('Pilih acara terlebih dahulu.', 'info'); return; }
+        const format = opt.dataset.format;
+        const filename = format === 'pdf' ? 'absensi.pdf' : 'absensi.xlsx';
+        downloadExport(API_CONFIG.getExportAbsensiUrl(selectedAcaraId, format), token, filename);
+        opt.closest('.export-menu')?.classList.remove('is-open');
+      });
+    });
+    acaraSelect.addEventListener('change', updateAbsensiExportState);
+  }
+
   /* ── Event: aksi pada card ── */
   listEl.addEventListener('click', async (event) => {
     const btn = event.target.closest('button[data-absensi-action]');
@@ -2901,6 +3051,29 @@ async function initAbsensiLogs(actualRole, token) {
     });
   }
 
+  const logsExportBtn = document.getElementById('logsExportBtn');
+  if (logsExportBtn) {
+    const updateLogsExportState = () => { logsExportBtn.disabled = !selectedAcaraId; };
+    updateLogsExportState();
+    logsExportBtn.addEventListener('click', (e) => {
+      if (!selectedAcaraId) { showToast('Pilih acara terlebih dahulu.', 'info'); return; }
+      e.stopPropagation();
+      const menu = logsExportBtn.parentElement.querySelector('.export-menu');
+      if (menu) menu.classList.toggle('is-open');
+    });
+    logsExportBtn.parentElement.querySelectorAll('.export-option').forEach((opt) => {
+      opt.addEventListener('click', () => {
+        if (!selectedAcaraId) { showToast('Pilih acara terlebih dahulu.', 'info'); return; }
+        const format = opt.dataset.format;
+        const status = statusFilter?.value || '';
+        const filename = format === 'pdf' ? 'logs_absensi.pdf' : 'logs_absensi.xlsx';
+        downloadExport(API_CONFIG.getExportLogsUrl(selectedAcaraId, { status }, format), token, filename);
+        opt.closest('.export-menu')?.classList.remove('is-open');
+      });
+    });
+    if (acaraFilter) acaraFilter.addEventListener('change', updateLogsExportState);
+  }
+
   setEmpty('Memuat data...', true);
   await loadAcaraFilter();
   await loadLogs();
@@ -3056,6 +3229,7 @@ async function initAcaraDetail(actualRole, token) {
     document.getElementById('detailMulai').textContent = formatDateTime(acaraData.tanggal_mulai);
     document.getElementById('detailAkhir').textContent = formatDateTime(acaraData.tanggal_akhir);
     document.getElementById('detailMaks').textContent = acaraData.maks_pengunjung ?? '-';
+    document.getElementById('detailPeserta').textContent = acaraData.peserta_ikut ?? '-';
     bannerEl.style.display = 'block';
     if (titleEl) titleEl.textContent = `Acara: ${acaraData.judul || ''}`;
 
