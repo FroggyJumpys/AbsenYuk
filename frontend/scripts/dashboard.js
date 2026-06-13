@@ -364,7 +364,8 @@ function initMobileSidebar() {
 
   const overlay = document.createElement('div');
   overlay.className = 'nav-overlay';
-  document.body.appendChild(overlay);
+  const dashboard = document.querySelector('.dashboard');
+  (dashboard || document.body).appendChild(overlay);
 
   let isOpen = false;
 
