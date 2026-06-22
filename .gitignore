@@ -31,9 +31,8 @@ prisma/migrations/**
 
 # local files
 /storage/
-/public/uploads/*
 !public/uploads/.gitkeep
-
+!public/uploads/avatars/.gitkeep
 # turbo
 .turbo
 
