@@ -1,10 +1,6 @@
 # AbsenYuk V2
 
 <p align="center">
-  <img src="public/favicon.svg" alt="AbsenYuk Logo" width="64" height="64" />
-</p>
-
-<p align="center">
   Sistem manajemen kehadiran acara modern dengan pelacakan berbasis QR, chat real-time, dan analitik komprehensif.
 </p>
 
@@ -71,7 +67,7 @@
 
 ```bash
 git clone <repository-url>
-cd AbsenYuk-V2
+cd AbsenYuk
 ```
 
 ### 2. Install Dependencies
